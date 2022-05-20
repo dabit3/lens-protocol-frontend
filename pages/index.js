@@ -96,10 +96,10 @@ export default function Home() {
       <div style={listItemContainerStyle}>
         {
           profiles.map((profile, index) => (
-            <Link href={`/profile/${profile.id}`}>
+            <Link href={`/profile/${profile.id}`} key={index}>
               <a>
                 <div style={listItemStyle}>
-                  <div style={profileContainerStyle} key={index}>
+                  <div style={profileContainerStyle} >
                     {
                       profile.picture ? (
                       <img src={profile.picture.original.url} style={profileImageStyle} />

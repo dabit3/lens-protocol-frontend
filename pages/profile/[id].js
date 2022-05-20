@@ -41,7 +41,7 @@ export default function Profile() {
           <img style={{
             ...profileImageStyle,
             backgroundColor: profile.color
-          }} src={profile.picture?.original.url} />
+          }} src={profile.picture?.original?.url} />
           <h3 style={nameStyle}>{profile.name}</h3>
           <p style={handleStyle}>{profile.handle}</p>
         </div>
@@ -49,7 +49,7 @@ export default function Profile() {
           <h3 style={postHeaderStyle}>Posts</h3>
           {
             publications.map((pub, index) => (
-              <div style={publicationWrapper}>
+              <div style={publicationWrapper} key={index}>
                 <p style={latestPostStyle}>{pub.metadata.content}</p>
               </div>
             ))
