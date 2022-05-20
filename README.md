@@ -1,6 +1,6 @@
 # Lens Protocol Front End Starter
 
-This is an example of how to build a front-end application on top of Lens Protocol.
+This is an example of how to build a front-end application on top of [Lens Protocol](https://docs.lens.xyz/docs).
 
 The main queries used in this app are defined in __api.js__:
 
