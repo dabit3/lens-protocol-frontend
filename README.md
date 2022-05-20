@@ -21,9 +21,9 @@ You can run this project by following these steps:
 1. Clone the repo, change into the directory, and install the dependencies
 
 ```sh
-git clone git@github.com:dabit3/lens-protocol-frontent.git
+git clone git@github.com:dabit3/lens-protocol-frontend.git
 
-cd lens-protocol-frontent
+cd lens-protocol-frontend
 
 npm install
 
