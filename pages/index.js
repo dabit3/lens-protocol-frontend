@@ -1,32 +1,16 @@
-import styles from '../styles/Home.module.css'
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
-import { urqlClient, getProfiles, recommendProfiles, getPublication } from '../api'
-import { useConnect, useAccount } from 'wagmi'
+import { urqlClient, searchProfiles, recommendProfiles, getPublications } from '../api'
+import Link from 'next/link'
 
 import LensHub from '../abi.json'
 
 const contractAddress = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 
-const ipfsMeta = {
-  name: '',
-  description: '',
-  image: '',
-  animation_url: ''
-}
-
-export default function Home(props) {
-  console.log('props: ', props)
+export default function Home() {
   const [connected, setConnected] = useState()
   const [profiles, setProfiles] = useState([])
-  const [profile, setProfile] = useState('')
-  const [profileImage, setProfileImage] = useState('')
-  const [meta, setMeta] = useState(ipfsMeta)
-  const [pub, setPub] = useState()
-
-  const { activeConnector, isConnecting } = useConnect()
-  const {isLoading } = useAccount()
+  const [searchString, setSearchString] = useState('')
 
   useEffect(() => {
     getRecommendedProfiles() 
@@ -45,7 +29,32 @@ export default function Home(props) {
   async function getRecommendedProfiles() {
     const response = await urqlClient.query(recommendProfiles).toPromise()
     const profileData = await Promise.all(response.data.recommendedProfiles.map(async profile => {
-      const pub = await urqlClient.query(getPublication, { id: profile.id}).toPromise()
+      const pub = await urqlClient.query(getPublications, { id: profile.id, limit: 1 }).toPromise()
+      profile.publication = pub.data.publications.items[0]
+      profile.backgroundColor = generateRandomColor()
+      return profile
+    }))
+    console.log('profileData: ', profileData)
+    setProfiles(profileData)
+    console.log('Lens example data: ', response)
+  }
+
+  async function connect() {
+    await window.ethereum.enable()
+    setConnected(true)
+  }
+
+  async function searchForProfile() {
+    console.log('searchString: ', searchString)
+    const response = await urqlClient.query(searchProfiles, {
+      profileName: searchString
+    }).toPromise()
+    console.log('response: ', response)
+    const profileData = await Promise.all(response.data.search.items.map(async profile => {
+      console.log('profile: ', profile)
+      const pub = await urqlClient.query(getPublications, { id: profile.profileId, limit: 1 }).toPromise()
+      profile.id = profile.profileId
+      profile.backgroundColor = generateRandomColor()
       profile.publication = pub.data.publications.items[0]
       return profile
     }))
@@ -54,22 +63,7 @@ export default function Home(props) {
     setProfiles(profileData)
     console.log('Lens example data: ', response)
 
-  }
-
-  async function queryExample () {
-    const response = await urqlClient.query(getProfiles, { id: '0x01' }).toPromise();
-    console.log('Lens example data: ', response)
-  }
-
-  async function connect() {
-    const addresses = await window.ethereum.enable()
-    console.log('addresses: ', addresses)
-    // return
-    setConnected(true)
-  }
-
-  async function searchForProfile() {
-    
+    console.log('response : ', response)
   }
 
   async function followUser() {
@@ -82,60 +76,72 @@ export default function Home(props) {
 
     await contract.follow([profileId], [0x0])
   }
-
-  if (!connected) return (
-    <div style={containerStyle}>
-      <button style={buttonStyle} onClick={connect}>Connect Wallet</button>
-    </div>
-  )
   
+  console.log('profiles:', profiles)
+
   return (
     <div style={containerStyle}>
       <input
-        placeholder='Search for profile'
-        onChange={e => setProfile(e.target.value)}
-        value={profile}
+        placeholder='Search'
+        onChange={e => setSearchString(e.target.value)}
+        value={searchString}
         style={inputStyle}
       />
-      <button style={buttonStyle} onClick={searchForProfile}>Search For Profile</button>
+      <button style={buttonStyle} onClick={searchForProfile}>Search Lens</button>
       {
-        profileImage && (
-          <img src={profileImage} width="200" />
+        !connected && (
+            <button style={buttonStyle} onClick={connect}>Connect Wallet</button>
         )
-      }
-      {
-        meta.name && (
-          <div>
-            <p>{meta.name}</p>
-            <p>{meta.description}</p>
-            <img src={meta.animation_url} width="200" />
-          </div>  
-        )
-      }
-      {
-        pub && <p>{pub}</p>
       }
       <div style={listItemContainerStyle}>
         {
           profiles.map((profile, index) => (
-            <div style={listItemStyle}>
-              <div style={profileContainerStyle} key={index}>
-                <img src={profile.picture?.original?.url} style={profileImageStyle} />
-                <div style={profileInfoStyle}>
-                  <h3 style={nameStyle}>{profile.name}</h3>
-                  <p style={handleStyle}>{profile.handle}</p>
+            <Link href={`/profile/${profile.id}`}>
+              <a>
+                <div style={listItemStyle}>
+                  <div style={profileContainerStyle} key={index}>
+                    {
+                      profile.picture ? (
+                      <img src={profile.picture.original.url} style={profileImageStyle} />
+                      ) : (
+                        <div
+                          style={{
+                            ...placeholderStyle,
+                            backgroundColor: profile.backgroundColor
+                          }}
+                        />
+                      )
+                    }
+                    
+                    <div style={profileInfoStyle}>
+                      <h3 style={nameStyle}>{profile.name}</h3>
+                      <p style={handleStyle}>{profile.handle}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p style={latestPostStyle}>{profile.publication?.metadata.content}</p>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <h4>Latest post</h4>
-                <p>{profile.publication.metadata.content}</p>
-              </div>
-            </div>
+              </a>
+            </Link>
           ))
         }
       </div>
     </div>
   )
+}
+
+function generateRandomColor(){
+  let maxVal = 0xFFFFFF;
+  let randomNumber = Math.random() * maxVal; 
+  randomNumber = Math.floor(randomNumber);
+  randomNumber = randomNumber.toString(16);
+  let randColor = randomNumber.padStart(6, 0);   
+  return `#${randColor.toUpperCase()}`
+}
+
+const latestPostStyle = {
+  margin: '8px 0px 10px'
 }
 
 const profileContainerStyle = {
@@ -147,6 +153,10 @@ const profileImageStyle = {
   width: '42px',
   height: '42px',
   borderRadius: '34px',
+}
+
+const placeholderStyle = {
+  ...profileImageStyle,
 }
 
 const containerStyle = {
@@ -178,7 +188,7 @@ const nameStyle = {
 
 const handleStyle = {
   margin: '0px 0px 5px',
-  color: '#'
+  color: '#b900c9'
 }
 
 const inputStyle = {

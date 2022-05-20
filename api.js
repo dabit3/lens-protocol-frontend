@@ -69,7 +69,7 @@ const recommendProfiles = `
 
 const getProfiles = `
   query Profiles($id: ProfileId!) {
-    profiles(request: { profileIds: [$id], limit: 10 }) {
+    profiles(request: { profileIds: [$id], limit: 25 }) {
       items {
         id
         name
@@ -137,12 +137,12 @@ const getProfiles = `
   }
 `
 
-const getPublication = `
-  query Publications($id: ProfileId!) {
+const getPublications = `
+  query Publications($id: ProfileId!, $limit: LimitScalar) {
     publications(request: {
       profileId: $id,
       publicationTypes: [POST],
-      limit: 1
+      limit: $limit
     }) {
       items {
         __typename 
@@ -184,10 +184,114 @@ const getPublication = `
   }
 `
 
+const searchProfiles = `
+  query Search($profileName: Search!) {
+    search(request: {
+      query: $profileName,
+      type: PROFILE,
+      limit: 10
+    }) {
+      ... on ProfileSearchResult {
+        __typename 
+        items {
+          ... on Profile {
+            ...ProfileFields
+          }
+        }
+        pageInfo {
+          prev
+          totalCount
+          next
+        }
+      }
+    }
+  }
+
+  fragment MediaFields on Media {
+    url
+    mimeType
+  }
+
+  fragment ProfileFields on Profile {
+    profileId: id,
+    name
+    bio
+    attributes {
+      displayType
+      traitType
+      key
+      value
+    }
+    metadata
+    isDefault
+    handle
+    picture {
+      ... on NftImage {
+        contractAddress
+        tokenId
+        uri
+        verified
+      }
+      ... on MediaSet {
+        original {
+          ...MediaFields
+        }
+      }
+    }
+    coverPicture {
+      ... on NftImage {
+        contractAddress
+        tokenId
+        uri
+        verified
+      }
+      ... on MediaSet {
+        original {
+          ...MediaFields
+        }
+      }
+    }
+    ownedBy
+    dispatcher {
+      address
+    }
+    stats {
+      totalFollowers
+      totalFollowing
+      totalPosts
+      totalComments
+      totalMirrors
+      totalPublications
+      totalCollects
+    }
+    followModule {
+      ... on FeeFollowModuleSettings {
+        type
+        amount {
+          asset {
+            name
+            symbol
+            decimals
+            address
+          }
+          value
+        }
+        recipient
+      }
+      ... on ProfileFollowModuleSettings {
+      type
+      }
+      ... on RevertFollowModuleSettings {
+      type
+      }
+    }
+  }
+`
 
 export {
   urqlClient,
   recommendProfiles,
   getProfiles,
-  getPublication
+  getPublications,
+  searchProfiles
 }
