@@ -1,9 +1,44 @@
 import '../styles/globals.css'
+import Link from 'next/link'
+import { css } from '@emotion/css'
 
 function MyApp({ Component, pageProps }) {
   return (
-    <Component {...pageProps} />
+    <div>
+      <nav className={navStyle}>
+        <div className={navContainerStyle}>
+          <img src="/icon.svg" className={iconStyle} />
+          <Link href='/'>
+            <a>
+              <p className={linkTextStyle}>Home</p>
+            </a>
+          </Link>
+        </div>
+      </nav>
+      <Component {...pageProps} />
+    </div>
   )
 }
+
+const linkTextStyle = css`
+  margin: 0;
+`
+
+const iconStyle = css`
+  height: 35px;
+  margin-right: 25px;
+`
+
+const navStyle = css`
+  background-color: white;
+  padding: 20px 30px;
+`
+
+const navContainerStyle = css`
+  width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+`
 
 export default MyApp

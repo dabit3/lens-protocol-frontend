@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 import { urqlClient, searchProfiles, recommendProfiles, getPublications } from '../api'
+import { css } from '@emotion/css'
+import { trimString } from '../utils'
 import Link from 'next/link'
 
 import LensHub from '../abi.json'
@@ -80,32 +82,34 @@ export default function Home() {
   console.log('profiles:', profiles)
 
   return (
-    <div style={containerStyle}>
-      <input
-        placeholder='Search'
-        onChange={e => setSearchString(e.target.value)}
-        value={searchString}
-        style={inputStyle}
-      />
-      <button style={buttonStyle} onClick={searchForProfile}>Search Lens</button>
-      {
-        !connected && (
-            <button style={buttonStyle} onClick={connect}>Connect Wallet</button>
-        )
-      }
-      <div style={listItemContainerStyle}>
+    <div className={containerStyle}>
+      <div className={searchContainerStyle}>
+        <input
+          placeholder='Search'
+          onChange={e => setSearchString(e.target.value)}
+          value={searchString}
+          className={inputStyle}
+        />
+        <button className={buttonStyle} onClick={searchForProfile}>Search Lens</button>
+        {
+          !connected && (
+              <button className={buttonStyle} onClick={connect}>Connect Wallet</button>
+          )
+        }
+      </div>
+      <div className={listItemContainerStyle}>
         {
           profiles.map((profile, index) => (
             <Link href={`/profile/${profile.id}`} key={index}>
               <a>
-                <div style={listItemStyle}>
-                  <div style={profileContainerStyle} >
+                <div className={listItemStyle}>
+                  <div className={profileContainerStyle} >
                     {
                       profile.picture ? (
-                      <img src={profile.picture.original.url} style={profileImageStyle} />
+                      <img src={profile.picture.original.url} className={profileImageStyle} />
                       ) : (
                         <div
-                          style={{
+                          className={{
                             ...placeholderStyle,
                             backgroundColor: profile.backgroundColor
                           }}
@@ -113,13 +117,13 @@ export default function Home() {
                       )
                     }
                     
-                    <div style={profileInfoStyle}>
-                      <h3 style={nameStyle}>{profile.name}</h3>
-                      <p style={handleStyle}>{profile.handle}</p>
+                    <div className={profileInfoStyle}>
+                      <h3 className={nameStyle}>{profile.name}</h3>
+                      <p className={handleStyle}>{profile.handle}</p>
                     </div>
                   </div>
                   <div>
-                    <p style={latestPostStyle}>{profile.publication?.metadata.content}</p>
+                    <p className={latestPostStyle}>{trimString(profile.publication?.metadata.content, 200)}</p>
                   </div>
                 </div>
               </a>
@@ -140,74 +144,84 @@ function generateRandomColor(){
   return `#${randColor.toUpperCase()}`
 }
 
-const latestPostStyle = {
-  margin: '8px 0px 10px'
-}
+const searchContainerStyle = css`
+  padding: 40px 0px 30px;
+`
 
-const profileContainerStyle = {
-  display: 'flex',
-  flexDirection: 'row',
-}
+const latestPostStyle = css`
+  margin: 8px 0px 10px;
+  word-wrap: break-word;
+`
 
-const profileImageStyle = {
-  width: '42px',
-  height: '42px',
-  borderRadius: '34px',
-}
+const profileContainerStyle = css`
+  display: flex;
+  flex-direction: row;
+`
 
-const placeholderStyle = {
-  ...profileImageStyle,
-}
+const profileImageStyle = css`
+  width: 42px;
+  height: 42px;,
+  border-radius: 34px;
+`
 
-const containerStyle = {
-  width: '900px',
-  margin: '0 auto',
-  padding: '50px 0px'
-}
+const placeholderStyle = css`
+  ${profileImageStyle};
+`
 
-const listItemContainerStyle = {
-  display: 'flex',
-  flexDirection: 'column'
-}
+const containerStyle = css`
+  width: 900px;
+  margin: 0 auto;
+  padding: 0px 0px 50px;
+`
 
-const listItemStyle = {
-  backgroundColor: 'white',
-  marginTop: '13px',
-  borderRadius: '7px',
-  border: '1px solid rgba(0, 0, 0, .15)',
-  padding: '19px 15px'
-}
+const listItemContainerStyle = css`
+  display: flex;
+  flex-direction: column;
+`
 
-const profileInfoStyle = {
-  marginLeft: '10px'
-}
+const listItemStyle = css`
+  background-color: white;
+  margin-top: 13px;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  padding: 19px 15px;
+`
 
-const nameStyle = {
-  margin: '0 0px 5px'
-}
+const profileInfoStyle = css`
+  margin-left: 10px;
+`
 
-const handleStyle = {
-  margin: '0px 0px 5px',
-  color: '#b900c9'
-}
+const nameStyle = css`
+  margin: 0 0px 5px;
+`
 
-const inputStyle = {
-  outline: 'none',
-  border: 'none',
-  padding: '12px 15px',
-  fontSize: '14px',
-  borderRadius: '7px',
-  border: '1px solid rgba(0, 0, 0, .1)'
-}
+const handleStyle = css`
+  margin: 0px 0px 5px;
+  color: #b900c9;
+`
 
-const buttonStyle = {
-  border: 'none',
-  outline: 'none',
-  marginLeft: '8px',
-  backgroundColor: 'black',
-  color: 'white',
-  padding: '10px 27px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontWeight: 'bold'
-}
+const inputStyle = css`
+  outline: none;
+  border: none;
+  padding: 12px 15px;
+  font-size: 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(0, 0, 0, .1);
+`
+
+const buttonStyle = css`
+  border: none;
+  outline: none;
+  margin-left: 8px;
+  background-color: black;
+  color: white;
+  padding: 13px 33px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  background: linear-gradient(to right, #8f34eb 0%, #b100b8 61%);
+  transition: all .35s;
+  &:hover {
+    box-shadow: 0px 0px 10px 1px rgba(245, 0, 255, .5);
+  }
+`

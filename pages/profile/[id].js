@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { urqlClient, getPublications, getProfiles } from '../../api'
+import { css } from '@emotion/css'
 
 export default function Profile() {
   const [profile, setProfile] = useState()
@@ -27,30 +28,32 @@ export default function Profile() {
   if (!profile) return null
 
   return (
-    <div style={containerStyle}>
+    <div className={containerStyle}>
       <div
-        style={{
+        className={{
           ...headerStyle,
           backgroundImage: `url(${profile.coverPicture?.original.url})`,
           backgroundColor: profile.color
         }}
       >
       </div>
-      <div style={columnWrapperStyle}>
-        <div style={leftColumnStyle}>
-          <img style={{
-            ...profileImageStyle,
-            backgroundColor: profile.color
-          }} src={profile.picture?.original?.url} />
-          <h3 style={nameStyle}>{profile.name}</h3>
-          <p style={handleStyle}>{profile.handle}</p>
+      <div className={columnWrapperStyle}>
+        <div>
+          <img className={
+            css`
+              ${profileImageStyle};
+              background-color: profile.color;
+            `
+          } src={profile.picture?.original?.url} />
+          <h3 className={nameStyle}>{profile.name}</h3>
+          <p className={handleStyle}>{profile.handle}</p>
         </div>
-        <div style={rightColumnStyle}>
-          <h3 style={postHeaderStyle}>Posts</h3>
+        <div className={rightColumnStyle}>
+          <h3 className={postHeaderStyle}>Posts</h3>
           {
             publications.map((pub, index) => (
-              <div style={publicationWrapper} key={index}>
-                <p style={latestPostStyle}>{pub.metadata.content}</p>
+              <div className={publicationWrapper} key={index}>
+                <p>{pub.metadata.content}</p>
               </div>
             ))
           }
@@ -58,10 +61,6 @@ export default function Profile() {
       </div>
     </div>
   )
-}
-
-const postHeaderStyle = {
-  margin: '0px 0px 15px'
 }
 
 function generateRandomColor(){
@@ -73,57 +72,57 @@ function generateRandomColor(){
   return `#${randColor.toUpperCase()}`
 }
 
-const publicationWrapper = {
-  backgroundColor: 'white',
-  marginBottom: '15px',
-  padding: '10px 20px',
-  borderRadius: '15px',
-  border: '1px solid #ededed'
-}
+const postHeaderStyle = css`
+  margin: 0px 0px 15px;
+`
 
-const latestPostStyle = {}
+const publicationWrapper = css`
+  background-color: white;
+  margin-bottom: 15px;
+  padding: 10px 20px;
+  border-radius: 15px;
+  border: 1px solid #ededed;
+`
 
-const nameStyle = {
-  margin: '15px 0px 5px'
-}
+const nameStyle = css`
+  margin: 15px 0px 5px;
+`
 
-const handleStyle = {
-  margin: '0px 0px 5px',
-  color: '#b900c9'
-}
+const handleStyle = css`
+  margin: 0px 0px 5px;
+  color: #b900c9;
+`
 
-const headerStyle = {
-  width: '900px',
-  maxHeight: '300px',
-  height: '300px',
-  overflow: 'hidden',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-}
+const headerStyle = css`
+  width: 900px;
+  max-height: 300px;
+  height: 300px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+`
 
-const profileImageStyle = {
-  width: '200px',
-  height: '200px',
-  maxWidth: '200px',
-  border: '10px solid white',
-  borderRadius: '12px',
-}
+const profileImageStyle = css`
+  width: 200px;
+  height: 200px;
+  max-width: 200px;
+  border: 10px solid white;
+  border-radius: 12px;
+`
 
-const columnWrapperStyle = {
-  marginTop: '20px',
-  display: 'flex',
-  flexDirection: 'row'
-}
+const columnWrapperStyle = css`
+  margin-top: 20px;
+  display: flex;
+  flex-direction: row;
+`
 
-const leftColumnStyle = {}
+const rightColumnStyle = css`
+  margin-left: 20px;
+  flex: 1;
+`
 
-const rightColumnStyle = {
-  marginLeft: '20px',
-  flex: '1'
-}
-
-const containerStyle = {
-  width: '900px',
-  margin: '0 auto',
-  padding: '50px 0px'
-}
+const containerStyle = css`
+  width: 900px;
+  margin: 0 auto;
+  padding: 50px 0px;
+`
