@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
-import { urqlClient, searchProfiles, recommendProfiles, explorePublications, getPublications } from '../api'
+import { urqlClient, searchProfiles, recommendProfiles, getPublications } from '../api'
 import { css } from '@emotion/css'
 import { trimString } from '../utils'
 import Link from 'next/link'
@@ -54,11 +54,9 @@ export default function Home() {
   }
 
   async function searchForProfile() {
-    console.log('searchString: ', searchString)
     const response = await urqlClient.query(searchProfiles, {
       query: searchString, type: 'PROFILE'
     }).toPromise()
-    console.log('response: ', response)
     const profileData = await Promise.all(response.data.search.items.map(async profile => {
       console.log('profile: ', profile)
       const pub = await urqlClient.query(getPublications, { id: profile.profileId, limit: 1 }).toPromise()

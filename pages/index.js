@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
-import { urqlClient, searchPublications, recommendProfiles, explorePublications, getPublications } from '../api'
+import { urqlClient, searchPublications, explorePublications } from '../api'
 import { css } from '@emotion/css'
 import { trimString } from '../utils'
 import Link from 'next/link'
@@ -11,7 +11,6 @@ const contractAddress = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 
 export default function Home() {
   const [connected, setConnected] = useState(true)
-  const [profiles, setProfiles] = useState([])
   const [posts, setPosts] = useState([])
   const [searchString, setSearchString] = useState('')
 
@@ -45,24 +44,6 @@ export default function Home() {
     }
   }
 
-  async function getRecommendedProfiles() {
-    try {
-      const response = await urqlClient.query(recommendProfiles).toPromise()
-      console.log('response: ', response)
-      const profileData = await Promise.all(response.data.recommendedProfiles.map(async profile => {
-        const pub = await urqlClient.query(getPublications, { id: profile.id, limit: 1 }).toPromise()
-        profile.publication = pub.data.publications.items[0]
-        profile.backgroundColor = generateRandomColor()
-        return profile
-      }))
-      console.log('profileData: ', profileData)
-      setProfiles(profileData)
-      console.log('Lens example data: ', response)
-    } catch (err) {
-      console.log('error fetching recommended profiles: ', err)
-    }
-  }
-
   async function connect() {
     await window.ethereum.enable()
     setConnected(true)
@@ -74,7 +55,7 @@ export default function Home() {
         query: searchString, type: 'PUBLICATION'
       }).toPromise()
       console.log('response:', response)
-      const postData = await response.data.search.items.map(post => {
+      const postData = response.data.search.items.map(post => {
         post.backgroundColor = generateRandomColor()
         return post
       })
@@ -97,8 +78,6 @@ export default function Home() {
     await contract.follow([profileId], [0x0])
   }
   
-  console.log('profiles:', profiles)
-
   return (
     <div className={containerStyle}>
       <div className={searchContainerStyle}>
