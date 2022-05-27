@@ -13,6 +13,11 @@ function MyApp({ Component, pageProps }) {
               <p className={linkTextStyle}>Home</p>
             </a>
           </Link>
+          <Link href='/profiles'>
+            <a>
+              <p className={linkTextStyle}>Explore Profiles</p>
+            </a>
+          </Link>
         </div>
       </nav>
       <Component {...pageProps} />
@@ -21,7 +26,7 @@ function MyApp({ Component, pageProps }) {
 }
 
 const linkTextStyle = css`
-  margin: 0;
+  margin-right: 40px;
 `
 
 const iconStyle = css`

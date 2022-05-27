@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
-import { urqlClient, searchPublications, recommendProfiles, explorePublications, getPublications } from '../api'
+import { urqlClient, searchProfiles, recommendProfiles, explorePublications, getPublications } from '../api'
 import { css } from '@emotion/css'
 import { trimString } from '../utils'
 import Link from 'next/link'
@@ -12,11 +12,10 @@ const contractAddress = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 export default function Home() {
   const [connected, setConnected] = useState(true)
   const [profiles, setProfiles] = useState([])
-  const [posts, setPosts] = useState([])
   const [searchString, setSearchString] = useState('')
 
   useEffect(() => {
-    fetchPosts() 
+    getRecommendedProfiles() 
     async function checkConnection() {
       const provider = new ethers.providers.Web3Provider(
         (window).ethereum
@@ -30,20 +29,6 @@ export default function Home() {
     }
     checkConnection()
   }, [])
-
-  async function fetchPosts() {
-    try {
-      const response = await urqlClient.query(explorePublications).toPromise()
-      console.log('dataresponse: ', response)
-      const posts = response.data.explorePublications.items.map(post => {
-        post.backgroundColor = generateRandomColor()
-        return post
-      })
-      setPosts(posts)
-    } catch (error) {
-      console.log({ error })
-    }
-  }
 
   async function getRecommendedProfiles() {
     try {
@@ -68,22 +53,26 @@ export default function Home() {
     setConnected(true)
   }
 
-  async function searchForPost() {
-    try {
-      const response = await urqlClient.query(searchPublications, {
-        query: searchString, type: 'PUBLICATION'
-      }).toPromise()
-      console.log('response:', response)
-      const postData = await response.data.search.items.map(post => {
-        post.backgroundColor = generateRandomColor()
-        return post
-      })
-  
-      console.log('postData: ', postData)
-      setPosts(postData)
-    } catch (error) {
-      console.log({ error })
-    }
+  async function searchForProfile() {
+    console.log('searchString: ', searchString)
+    const response = await urqlClient.query(searchProfiles, {
+      query: searchString, type: 'PROFILE'
+    }).toPromise()
+    console.log('response: ', response)
+    const profileData = await Promise.all(response.data.search.items.map(async profile => {
+      console.log('profile: ', profile)
+      const pub = await urqlClient.query(getPublications, { id: profile.profileId, limit: 1 }).toPromise()
+      profile.id = profile.profileId
+      profile.backgroundColor = generateRandomColor()
+      profile.publication = pub.data.publications.items[0]
+      return profile
+    }))
+
+    console.log('profileData: ', profileData)
+    setProfiles(profileData)
+    console.log('Lens example data: ', response)
+
+    console.log('response : ', response)
   }
 
   async function followUser() {
@@ -97,8 +86,6 @@ export default function Home() {
     await contract.follow([profileId], [0x0])
   }
   
-  console.log('profiles:', profiles)
-
   return (
     <div className={containerStyle}>
       <div className={searchContainerStyle}>
@@ -108,7 +95,7 @@ export default function Home() {
           value={searchString}
           className={inputStyle}
         />
-        <button className={buttonStyle} onClick={searchForPost}>Search Posts</button>
+        <button className={buttonStyle} onClick={searchForProfile}>Search Profiles</button>
         {
           !connected && (
               <button className={buttonStyle} onClick={connect}>Connect Wallet</button>
@@ -117,20 +104,20 @@ export default function Home() {
       </div>
       <div className={listItemContainerStyle}>
         {
-          posts.map((post, index) => (
-            <Link href={`/profile/${post.profile.id}`} key={index}>
+          profiles.map((profile, index) => (
+            <Link href={`/profile/${profile.id}`} key={index}>
               <a>
                 <div className={listItemStyle}>
                   <div className={profileContainerStyle} >
                     {
-                      post.profile.picture && post.profile.picture.original ? (
-                      <img src={post.profile.picture.original.url} className={profileImageStyle} />
+                      profile.picture && profile.picture.original ? (
+                      <img src={profile.picture.original.url} className={profileImageStyle} />
                       ) : (
                         <div
                           className={
                             css`
                             ${placeholderStyle};
-                            background-color: ${post.backgroundColor};
+                            background-color: ${profile.backgroundColor};
                             `
                           }
                         />
@@ -138,12 +125,12 @@ export default function Home() {
                     }
                     
                     <div className={profileInfoStyle}>
-                      <h3 className={nameStyle}>{post.profile.name}</h3>
-                      <p className={handleStyle}>{post.profile.handle}</p>
+                      <h3 className={nameStyle}>{profile.name}</h3>
+                      <p className={handleStyle}>{profile.handle}</p>
                     </div>
                   </div>
                   <div>
-                    <p className={latestPostStyle}>{trimString(post.metadata.content, 200)}</p>
+                    <p className={latestPostStyle}>{trimString(profile.publication?.metadata.content, 200)}</p>
                   </div>
                 </div>
               </a>
