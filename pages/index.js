@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 import { urqlClient, searchPublications, explorePublications } from '../api'
-import { css } from '@emotion/css'
+import { css, keyframes } from '@emotion/css'
 import { trimString } from '../utils'
 import Link from 'next/link'
 
@@ -12,6 +12,7 @@ const contractAddress = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 export default function Home() {
   const [connected, setConnected] = useState(true)
   const [posts, setPosts] = useState([])
+  const [loadingState, setLoadingState] = useState('loading')
   const [searchString, setSearchString] = useState('')
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function Home() {
         return post
       })
       setPosts(posts)
+      setLoadingState('loaded')
     } catch (error) {
       console.log({ error })
     }
@@ -96,6 +98,14 @@ export default function Home() {
       </div>
       <div className={listItemContainerStyle}>
         {
+           loadingState === 'loading' && [0,1,2,3].map((n, index) => (
+            <div
+              className={grayLoadingStyle}
+              key={index}
+            />
+          ))
+        }
+        {
           posts.map((post, index) => (
             <Link href={`/profile/${post.profile.id}`} key={index}>
               <a>
@@ -142,6 +152,29 @@ function generateRandomColor(){
   let randColor = randomNumber.padStart(6, 0);   
   return `#${randColor.toUpperCase()}`
 }
+
+const shimmer = keyframes`
+from {
+  opacity: .5;
+}
+
+50% {
+  opacity: 1;
+}
+
+100% {
+  opacity: .5;
+}
+`
+
+const grayLoadingStyle = css`
+  background-color: rgba(0, 0, 0, .075);
+  height: 115px;
+  width: 100%;
+  margin-top: 13px;
+  border-radius: 7px;
+  animation: ${shimmer} 2s infinite linear;
+`
 
 const searchContainerStyle = css`
   padding: 40px 0px 30px;
