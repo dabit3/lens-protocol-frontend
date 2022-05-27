@@ -52,6 +52,7 @@ export default function Home() {
   }
 
   async function searchForPost() {
+    setLoadingState('')
     try {
       const response = await urqlClient.query(searchPublications, {
         query: searchString, type: 'PUBLICATION'
@@ -64,6 +65,9 @@ export default function Home() {
   
       console.log('postData: ', postData)
       setPosts(postData)
+      if (!postData.length) {
+        setLoadingState('no-results')
+      }
     } catch (error) {
       console.log({ error })
     }
@@ -97,6 +101,11 @@ export default function Home() {
         }
       </div>
       <div className={listItemContainerStyle}>
+        {
+          loadingState === 'no-results' && (
+            <h2>No results....</h2>
+          )
+        }
         {
            loadingState === 'loading' && [0,1,2,3].map((n, index) => (
             <div
