@@ -1,6 +1,8 @@
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { urqlClient, getPublications, getProfiles } from '../../api'
+import { getPublications, getProfiles } from '../../api/queries'
+import { followUser as followUserMutation } from '../../api/mutations'
+import { urqlClient } from '../../api'
 import { css } from '@emotion/css'
 
 export default function Profile() {
@@ -25,16 +27,30 @@ export default function Profile() {
     setPublications(pubs.data.publications.items)
   }
 
+  async function followUser() {
+    const followRequest = [{
+      profile: "0x266b"
+    }]
+    try {
+      const data = await urqlClient.mutation(followUserMutation, {
+        request: followRequest
+      }).toPromise()
+      console.log('followed..', data)
+    } catch (err) {
+      console.log('error: ', err)
+    }
+  }
+
   if (!profile) return null
 
   return (
     <div className={containerStyle}>
       <div
-        className={{
-          ...headerStyle,
-          backgroundImage: `url(${profile.coverPicture?.original.url})`,
-          backgroundColor: profile.color
-        }}
+        className={css`
+          ${headerStyle};
+          background-image: url(${profile.coverPicture?.original.url});
+          background-color: ${profile.color};
+        `}
       >
       </div>
       <div className={columnWrapperStyle}>
@@ -47,13 +63,19 @@ export default function Profile() {
           } src={profile.picture?.original?.url} />
           <h3 className={nameStyle}>{profile.name}</h3>
           <p className={handleStyle}>{profile.handle}</p>
+          <div>
+            <button
+              onClick={followUser}
+              className={buttonStyle}
+            >Follow</button>
+          </div>
         </div>
         <div className={rightColumnStyle}>
           <h3 className={postHeaderStyle}>Posts</h3>
           {
             publications.map((pub, index) => (
               <div className={publicationWrapper} key={index}>
-                <p>{pub.metadata.content}</p>
+                <p className={publicationContentStyle}>{pub.metadata.content}</p>
               </div>
             ))
           }
@@ -79,9 +101,13 @@ const postHeaderStyle = css`
 const publicationWrapper = css`
   background-color: white;
   margin-bottom: 15px;
-  padding: 10px 20px;
+  padding: 5px 25px;
   border-radius: 15px;
   border: 1px solid #ededed;
+`
+
+const publicationContentStyle = css`
+  line-height: 26px;
 `
 
 const nameStyle = css`
@@ -125,4 +151,24 @@ const containerStyle = css`
   width: 900px;
   margin: 0 auto;
   padding: 50px 0px;
+`
+
+const buttonStyle = css`
+  border: none;
+  outline: none;
+  margin-top: 15px;
+  background-color: black;
+  color: #340036;
+  padding: 13px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: rgb(249, 92, 255);
+  transition: all .35s;
+  width: 100%;
+  letter-spacing: .75px;
+  &:hover {
+    background-color: rgba(249, 92, 255, .75);
+  }
 `

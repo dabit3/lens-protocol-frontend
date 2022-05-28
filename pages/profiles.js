@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
-import { urqlClient, searchProfiles, recommendProfiles, getPublications } from '../api'
+import { searchProfiles, recommendProfiles, getPublications } from '../api/queries'
+import { urqlClient } from '../api'
+
 import { css, keyframes } from '@emotion/css'
 import { trimString } from '../utils'
 import Link from 'next/link'
@@ -10,25 +12,12 @@ import LensHub from '../abi.json'
 const contractAddress = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 
 export default function Home() {
-  const [connected, setConnected] = useState(true)
   const [profiles, setProfiles] = useState([])
   const [loadingState, setLoadingState] = useState('loading')
   const [searchString, setSearchString] = useState('')
 
   useEffect(() => {
     getRecommendedProfiles() 
-    async function checkConnection() {
-      const provider = new ethers.providers.Web3Provider(
-        (window).ethereum
-      )
-      const addresses = await provider.listAccounts();
-      if (addresses.length) {
-        setConnected(true)
-      } else {
-        setConnected(false)
-      }
-    }
-    checkConnection()
   }, [])
 
   async function getRecommendedProfiles() {
@@ -50,11 +39,6 @@ export default function Home() {
     }
   }
 
-  async function connect() {
-    await window.ethereum.enable()
-    setConnected(true)
-  }
-
   async function searchForProfile() {
     const response = await urqlClient.query(searchProfiles, {
       query: searchString, type: 'PROFILE'
@@ -74,17 +58,6 @@ export default function Home() {
 
     console.log('response : ', response)
   }
-
-  async function followUser() {
-    const provider = new ethers.providers.Web3Provider(window.ethereum)
-    const signer = await provider.getSigner()
-    const contract = new ethers.Contract(contractAddress, LensHub, signer)
-
-    const data = await contract.getProfileIdByHandle(profile)
-    const profileId = data.toString()
-
-    await contract.follow([profileId], [0x0])
-  }
   
   return (
     <div className={containerStyle}>
@@ -95,12 +68,7 @@ export default function Home() {
           value={searchString}
           className={inputStyle}
         />
-        <button className={buttonStyle} onClick={searchForProfile}>Search Profiles</button>
-        {
-          !connected && (
-              <button className={buttonStyle} onClick={connect}>Connect Wallet</button>
-          )
-        }
+        <button className={buttonStyle} onClick={searchForProfile}>SEARCH PROFILES</button>
       </div>
       <div className={listItemContainerStyle}>
         {
@@ -187,7 +155,7 @@ const searchContainerStyle = css`
 `
 
 const latestPostStyle = css`
-  margin: 8px 0px 10px;
+  margin: 23px 0px 5px;
   word-wrap: break-word;
 `
 
@@ -220,9 +188,9 @@ const listItemContainerStyle = css`
 const listItemStyle = css`
   background-color: white;
   margin-top: 13px;
-  border-radius: 7px;
+  border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, .15);
-  padding: 19px 15px;
+  padding: 21px;
 `
 
 const profileInfoStyle = css`
@@ -241,9 +209,9 @@ const handleStyle = css`
 const inputStyle = css`
   outline: none;
   border: none;
-  padding: 12px 15px;
-  font-size: 14px;
-  border-radius: 7px;
+  padding: 15px 20px;
+  font-size: 16px;
+  border-radius: 25px;
   border: 2px solid rgba(0, 0, 0, .04);
   transition: all .4s;
   width: 300px;
@@ -259,15 +227,17 @@ const buttonStyle = css`
   outline: none;
   margin-left: 15px;
   background-color: black;
-  color: white;
-  padding: 13px 33px;
+  color: #340036;
+  padding: 17px;
   border-radius: 25px;
   cursor: pointer;
-  font-weight: bold;
-  background: linear-gradient(to right, #8f34eb 0%, #b100b8 61%);
-  transition: all .55s;
-  width: 200px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: rgb(249, 92, 255);
+  transition: all .35s;
+  width: 240px;
+  letter-spacing: .75px;
   &:hover {
-    box-shadow: 0px 0px 10px 1px rgba(245, 0, 255, .5);
+    background-color: rgba(249, 92, 255, .75);
   }
 `

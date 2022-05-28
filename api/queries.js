@@ -1,13 +1,3 @@
-import { createClient } from 'urql'
-
-const APIURL = "https://api.lens.dev"
-
-console.log('APIURL: ', APIURL)
-
-const urqlClient = new createClient({
-  url: APIURL,
-})
-
 const recommendProfiles = `
   query RecommendedProfiles {
     recommendedProfiles {
@@ -655,15 +645,22 @@ const explorePublications = `
     createdAt
     appId
   }
+`
 
+const challenge = `
+  query Challenge($address: ChallengeRequest!) {
+    challenge(request: { address: $address }) {
+      text
+    }
+  }
 `
 
 export {
-  urqlClient,
   recommendProfiles,
   getProfiles,
   getPublications,
   searchProfiles,
   searchPublications,
-  explorePublications
+  explorePublications,
+  challenge
 }
