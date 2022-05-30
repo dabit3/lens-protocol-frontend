@@ -647,13 +647,29 @@ const explorePublications = `
   }
 `
 
-const challenge = `
-  query Challenge($address: ChallengeRequest!) {
+const getChallenge = `
+  query Challenge($address: EthereumAddress!) {
     challenge(request: { address: $address }) {
       text
     }
   }
 `
+
+const doesFollow = `
+  query($request: DoesFollowRequest!) {
+    doesFollow(request: $request) { 
+      followerAddress
+      profileId
+      follows
+    }
+  }
+`
+
+/*
+* const doesFollowRequest = {
+*   followInfos: [{ followerAddress: EthereumAddress!, profileId: ProfileId! }]
+*  }
+*/
 
 export {
   recommendProfiles,
@@ -662,5 +678,6 @@ export {
   searchProfiles,
   searchPublications,
   explorePublications,
-  challenge
+  doesFollow,
+  getChallenge
 }

@@ -1,41 +1,110 @@
 import { useRouter } from 'next/router'
-import { useState, useEffect } from 'react'
-import { getPublications, getProfiles } from '../../api/queries'
-import { followUser as followUserMutation } from '../../api/mutations'
-import { urqlClient } from '../../api'
+import { useState, useEffect, useContext } from 'react'
+import {
+  createClient,
+  getPublications,
+  getProfiles,
+  doesFollow as doesFollowQuery,
+  createUnfollowTypedData
+} from '../../api'
+import { ethers } from 'ethers'
 import { css } from '@emotion/css'
+import { AppContext } from '../../context'
+import { getSigner, generateRandomColor } from '../../utils'
+
+import ABI from '../../abi'
+const LENS_HUB_CONTRACT_ADDRESS = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 
 export default function Profile() {
   const [profile, setProfile] = useState()
   const [publications, setPublications] = useState([])
+  const [doesFollow, setDoesFollow] = useState()
+  const [loadedState, setLoadedState] = useState('')
   const router = useRouter()
+  const context = useContext(AppContext)
   const { id } = router.query
+  const { userAddress } = context
 
   useEffect(() => {
     if (id) {
-      fetchProfile() 
+      fetchProfile()
     }
-  }, [id])
+    if (id && userAddress) {
+      checkDoesFollow()
+    }
+  }, [id, userAddress])
+
+  async function unfollow() {
+    try {
+      const client = await createClient()
+      const response = await client.mutation(createUnfollowTypedData, {
+        request: { profile: id }
+      }).toPromise()
+      const typedData = response.data.createUnfollowTypedData.typedData
+      const contract = new ethers.Contract(
+        typedData.domain.verifyingContract,
+        ABI,
+        getSigner()
+      )
+
+      const tx = await contract.burn(typedData.value.tokenId)
+      setTimeout(() => {
+        setDoesFollow(false)
+      }, 2500)
+      await tx.wait()
+      console.log(`successfully unfollowed ... ${profile.handle}`)
+      } catch (err) {
+        console.log('error:', err)
+      }
+  }
+
   async function fetchProfile() {
-    const returnedProfile = await urqlClient.query(getProfiles, { id }).toPromise();
-    const profileData = returnedProfile.data.profiles.items[0]
-    profileData.color = generateRandomColor()
-    setProfile(profileData)
-    console.log('returnedProfile: ', returnedProfile)
-    const pubs = await urqlClient.query(getPublications, { id, limit: 50 }).toPromise()
-    console.log('pubs: ', pubs)
-    setPublications(pubs.data.publications.items)
+    try {
+      const urqlClient = await createClient()
+      const returnedProfile = await urqlClient.query(getProfiles, { id }).toPromise();
+      const profileData = returnedProfile.data.profiles.items[0]
+      profileData.color = generateRandomColor()
+      setProfile(profileData)
+
+      const pubs = await urqlClient.query(getPublications, { id, limit: 50 }).toPromise()
+
+      setPublications(pubs.data.publications.items)
+      setLoadedState('loaded')
+    } catch (err) {
+      console.log('error fetching profile...', err)
+    }
+  }
+
+  async function checkDoesFollow() {
+    const urqlClient = await createClient()
+    const response = await urqlClient.query(
+      doesFollowQuery,
+      {
+        request: {
+          followInfos: [{
+            followerAddress: userAddress,
+            profileId: id
+          }]
+        }
+      }
+    ).toPromise()
+    setDoesFollow(response.data.doesFollow[0].follows)
   }
 
   async function followUser() {
-    const followRequest = [{
-      profile: "0x266b"
-    }]
+    const contract = new ethers.Contract(
+      LENS_HUB_CONTRACT_ADDRESS,
+      ABI,
+      getSigner()
+    )
+
     try {
-      const data = await urqlClient.mutation(followUserMutation, {
-        request: followRequest
-      }).toPromise()
-      console.log('followed..', data)
+      const tx = await contract.follow([id], [0x0])
+      setTimeout(() => {
+        setDoesFollow(true)
+      }, 2500)
+      await tx.wait()
+      console.log(`successfully followed ... ${profile.handle}`)
     } catch (err) {
       console.log('error: ', err)
     }
@@ -64,10 +133,21 @@ export default function Profile() {
           <h3 className={nameStyle}>{profile.name}</h3>
           <p className={handleStyle}>{profile.handle}</p>
           <div>
-            <button
-              onClick={followUser}
-              className={buttonStyle}
-            >Follow</button>
+            {
+              userAddress ? (
+                doesFollow ? (
+                  <button
+                   onClick={unfollow}
+                   className={buttonStyle}
+                 >Unfollow</button>
+                ) : (
+                  <button
+                    onClick={followUser}
+                    className={buttonStyle}
+                  >Follow</button>
+                )
+              ) : null
+            }
           </div>
         </div>
         <div className={rightColumnStyle}>
@@ -79,20 +159,36 @@ export default function Profile() {
               </div>
             ))
           }
+          {
+            loadedState === 'loaded' && !publications.length && (
+              <div className={emptyPostContainerStyle}>
+                <p className={emptyPostTextStyle}>
+                  <span className={emptyPostHandleStyle}>{profile.handle}</span> has not posted yet!
+                </p>
+              </div>
+            )
+          }
         </div>
       </div>
     </div>
   )
 }
 
-function generateRandomColor(){
-  let maxVal = 0xFFFFFF; // 16777215
-  let randomNumber = Math.random() * maxVal; 
-  randomNumber = Math.floor(randomNumber);
-  randomNumber = randomNumber.toString(16);
-  let randColor = randomNumber.padStart(6, 0);   
-  return `#${randColor.toUpperCase()}`
-}
+const emptyPostTextStyle = css`
+  text-align: center;
+  margin: 0;
+`
+
+const emptyPostContainerStyle = css`
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, .15);
+  padding: 25px;
+  border-radius: 8px;
+`
+
+const emptyPostHandleStyle = css`
+  font-weight: 600;
+`
 
 const postHeaderStyle = css`
   margin: 0px 0px 15px;
@@ -154,21 +250,21 @@ const containerStyle = css`
 `
 
 const buttonStyle = css`
-  border: none;
+  border: 2px solid rgb(249, 92, 255);
   outline: none;
   margin-top: 15px;
-  background-color: black;
-  color: #340036;
+  color: rgb(249, 92, 255);
   padding: 13px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  background-color: rgb(249, 92, 255);
   transition: all .35s;
+  font-weight: 700;
   width: 100%;
   letter-spacing: .75px;
   &:hover {
-    background-color: rgba(249, 92, 255, .75);
+    background-color: rgb(249, 92, 255);
+    color: white;
   }
 `

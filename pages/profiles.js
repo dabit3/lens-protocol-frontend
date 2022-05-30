@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react'
-import { ethers } from 'ethers'
-import { searchProfiles, recommendProfiles, getPublications } from '../api/queries'
-import { urqlClient } from '../api'
+import { createClient, searchProfiles, recommendProfiles, getPublications } from '../api'
+import { css } from '@emotion/css'
+import { trimString, generateRandomColor } from '../utils'
+import { SearchButton, SearchInput, Placeholders } from '../components'
 
-import { css, keyframes } from '@emotion/css'
-import { trimString } from '../utils'
 import Link from 'next/link'
-
-import LensHub from '../abi.json'
-
-const contractAddress = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 
 export default function Home() {
   const [profiles, setProfiles] = useState([])
@@ -22,62 +17,64 @@ export default function Home() {
 
   async function getRecommendedProfiles() {
     try {
+      const urqlClient = await createClient()
       const response = await urqlClient.query(recommendProfiles).toPromise()
-      console.log('response: ', response)
       const profileData = await Promise.all(response.data.recommendedProfiles.map(async profile => {
         const pub = await urqlClient.query(getPublications, { id: profile.id, limit: 1 }).toPromise()
         profile.publication = pub.data.publications.items[0]
         profile.backgroundColor = generateRandomColor()
         return profile
       }))
-      console.log('profileData: ', profileData)
       setProfiles(profileData)
       setLoadingState('loaded')
-      console.log('Lens example data: ', response)
     } catch (err) {
       console.log('error fetching recommended profiles: ', err)
     }
   }
 
   async function searchForProfile() {
-    const response = await urqlClient.query(searchProfiles, {
-      query: searchString, type: 'PROFILE'
-    }).toPromise()
-    const profileData = await Promise.all(response.data.search.items.map(async profile => {
-      console.log('profile: ', profile)
-      const pub = await urqlClient.query(getPublications, { id: profile.profileId, limit: 1 }).toPromise()
-      profile.id = profile.profileId
-      profile.backgroundColor = generateRandomColor()
-      profile.publication = pub.data.publications.items[0]
-      return profile
-    }))
+    try {
+      const urqlClient = await createClient()
+      const response = await urqlClient.query(searchProfiles, {
+        query: searchString, type: 'PROFILE'
+      }).toPromise()
+      const profileData = await Promise.all(response.data.search.items.map(async profile => {
+        const pub = await urqlClient.query(getPublications, { id: profile.profileId, limit: 1 }).toPromise()
+        profile.id = profile.profileId
+        profile.backgroundColor = generateRandomColor()
+        profile.publication = pub.data.publications.items[0]
+        return profile
+      }))
 
-    console.log('profileData: ', profileData)
-    setProfiles(profileData)
-    console.log('Lens example data: ', response)
+      setProfiles(profileData)
+    } catch (err) {
+      console.log('error searching profiles...', err)
+    }
+  }
 
-    console.log('response : ', response)
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      searchForProfile()
+    }
   }
   
   return (
     <div className={containerStyle}>
       <div className={searchContainerStyle}>
-        <input
+        <SearchInput
           placeholder='Search'
           onChange={e => setSearchString(e.target.value)}
           value={searchString}
-          className={inputStyle}
+          onKeyDown={handleKeyDown}      
         />
-        <button className={buttonStyle} onClick={searchForProfile}>SEARCH PROFILES</button>
+        <SearchButton
+          onClick={searchForProfile}
+          buttonText="SEARCH PROFILES"
+        />
       </div>
       <div className={listItemContainerStyle}>
         {
-           loadingState === 'loading' && [0,1,2,3].map((n, index) => (
-            <div
-              className={grayLoadingStyle}
-              key={index}
-            />
-          ))
+           loadingState === 'loading' && <Placeholders number={6} />
         }
         {
           profiles.map((profile, index) => (
@@ -117,38 +114,6 @@ export default function Home() {
     </div>
   )
 }
-
-function generateRandomColor(){
-  let maxVal = 0xFFFFFF;
-  let randomNumber = Math.random() * maxVal; 
-  randomNumber = Math.floor(randomNumber);
-  randomNumber = randomNumber.toString(16);
-  let randColor = randomNumber.padStart(6, 0);   
-  return `#${randColor.toUpperCase()}`
-}
-
-const shimmer = keyframes`
-from {
-  opacity: .5;
-}
-
-50% {
-  opacity: 1;
-}
-
-100% {
-  opacity: .5;
-}
-`
-
-const grayLoadingStyle = css`
-  background-color: rgba(0, 0, 0, .075);
-  height: 115px;
-  width: 100%;
-  margin-top: 13px;
-  border-radius: 7px;
-  animation: ${shimmer} 2s infinite linear;
-`
 
 const searchContainerStyle = css`
   padding: 40px 0px 30px;
@@ -219,25 +184,5 @@ const inputStyle = css`
   &:focus {
     background-color: white;
     border: 2px solid rgba(0, 0, 0, .1);
-  }
-`
-
-const buttonStyle = css`
-  border: none;
-  outline: none;
-  margin-left: 15px;
-  background-color: black;
-  color: #340036;
-  padding: 17px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  background-color: rgb(249, 92, 255);
-  transition: all .35s;
-  width: 240px;
-  letter-spacing: .75px;
-  &:hover {
-    background-color: rgba(249, 92, 255, .75);
   }
 `

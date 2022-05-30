@@ -1,13 +1,20 @@
 import '../styles/globals.css'
 import { useState, useEffect } from 'react'
-import { ethers } from 'ethers'
-import Link from 'next/link'
+import { ethers, providers } from 'ethers'
 import { css } from '@emotion/css'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { createClient, STORAGE_KEY, authenticate as authenticateMutation, getChallenge } from '../api'
+import { parseJwt, refreshAuthToken } from '../utils'
+import { AppContext } from '../context'
 
 function MyApp({ Component, pageProps }) {
   const [connected, setConnected] = useState(true)
+  const [userAddress, setUserAddress] = useState()
+  const router = useRouter()
 
   useEffect(() => {
+    refreshAuthToken()
     async function checkConnection() {
       const provider = new ethers.providers.Web3Provider(
         (window).ethereum
@@ -15,50 +22,87 @@ function MyApp({ Component, pageProps }) {
       const addresses = await provider.listAccounts();
       if (addresses.length) {
         setConnected(true)
+        setUserAddress(addresses[0])
       } else {
         setConnected(false)
       }
     }
     checkConnection()
+    listenForRouteChangeEvents()
   }, [])
 
-  async function connect() {
-    await window.ethereum.enable()
-    setConnected(true)
+  async function listenForRouteChangeEvents() {
+    router.events.on('routeChangeStart', () => {
+      refreshAuthToken()
+    })
+  }
+
+  async function signIn() {
+    try {
+      const accounts = await window.ethereum.send(
+        "eth_requestAccounts"
+      )
+      setConnected(true)
+      const account = accounts.result[0]
+      setUserAddress(account)
+      const urqlClient = await createClient()
+      const response = await urqlClient.query(getChallenge, {
+        address: account
+      }).toPromise()
+      const provider = new providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner()
+      const signature = await signer.signMessage(response.data.challenge.text)
+      const authData = await urqlClient.mutation(authenticateMutation, {
+        address: account, signature
+      }).toPromise()
+      const { accessToken, refreshToken } = authData.data.authenticate
+      const accessTokenData = parseJwt(accessToken)
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        accessToken, refreshToken, exp: accessTokenData.exp
+      }))
+      
+    } catch (err) {
+      console.log('error: ', err)
+    }
   }
 
   return (
-    <div>
-      <nav className={navStyle}>
-        <div className={navContainerStyle}>
-          <div className={linkContainerStyle}>
-            <Link href='/'>
-              <a>
-                <img src="/icon.svg" className={iconStyle} />
-              </a>
-            </Link>
-            <Link href='/'>
-              <a>
-                <p className={linkTextStyle}>Home</p>
-              </a>
-            </Link>
-            <Link href='/profiles'>
-              <a>
-                <p className={linkTextStyle}>Explore Profiles</p>
-              </a>
-            </Link>
+    <AppContext.Provider value={{
+      userAddress
+    }}>
+      <div>
+        <nav className={navStyle}>
+          <div className={navContainerStyle}>
+            <div className={linkContainerStyle}>
+              <Link href='/'>
+                <a>
+                  <img src="/icon.svg" className={iconStyle} />
+                </a>
+              </Link>
+              <Link href='/'>
+                <a>
+                  <p className={linkTextStyle}>Home</p>
+                </a>
+              </Link>
+              <Link href='/profiles'>
+                <a>
+                  <p className={linkTextStyle}>Explore Profiles</p>
+                </a>
+              </Link>
+            </div>
+            <div className={buttonContainerStyle}>
+              {
+                !connected && (
+                  <button className={buttonStyle} onClick={signIn}>Sign in</button>
+                )
+              }
+            </div>
           </div>
-          <div className={buttonContainerStyle}>
-            {
-              !connected && (
-                <button className={buttonStyle} onClick={connect}>Sign in</button>
-              )
-            }
-          </div>
-        </div>
-      </nav>
-      <Component {...pageProps} />
-    </div>
+        </nav>
+        <Component {...pageProps} />
+      </div>
+    </AppContext.Provider>
   )
 }
 

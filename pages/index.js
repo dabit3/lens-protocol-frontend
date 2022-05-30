@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react'
-import { ethers } from 'ethers'
-import { searchPublications, explorePublications } from '../api/queries'
-import { urqlClient } from '../api'
-import { css, keyframes } from '@emotion/css'
-import { trimString } from '../utils'
+import { createClient, basicClient, searchPublications, explorePublications } from '../api'
+import { css } from '@emotion/css'
+import { trimString, generateRandomColor } from '../utils'
+import { SearchButton, SearchInput, Placeholders } from '../components'
 import Link from 'next/link'
-
-import LensHub from '../abi.json'
-
-const contractAddress = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 
 export default function Home() {
   const [posts, setPosts] = useState([])
@@ -21,8 +16,7 @@ export default function Home() {
 
   async function fetchPosts() {
     try {
-      const response = await urqlClient.query(explorePublications).toPromise()
-      console.log('dataresponse: ', response)
+      const response = await basicClient.query(explorePublications).toPromise()
       const posts = response.data.explorePublications.items.map(post => {
         post.backgroundColor = generateRandomColor()
         return post
@@ -37,6 +31,7 @@ export default function Home() {
   async function searchForPost() {
     setLoadingState('')
     try {
+      const urqlClient = await createClient()
       const response = await urqlClient.query(searchPublications, {
         query: searchString, type: 'PUBLICATION'
       }).toPromise()
@@ -56,27 +51,25 @@ export default function Home() {
     }
   }
 
-  async function followUser() {
-    const provider = new ethers.providers.Web3Provider(window.ethereum)
-    const signer = await provider.getSigner()
-    const contract = new ethers.Contract(contractAddress, LensHub, signer)
-
-    const data = await contract.getProfileIdByHandle(profile)
-    const profileId = data.toString()
-
-    await contract.follow([profileId], [0x0])
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      searchForPost()
+    }
   }
-  
+
   return (
     <div className={containerStyle}>
       <div className={searchContainerStyle}>
-        <input
+        <SearchInput
           placeholder='Search'
           onChange={e => setSearchString(e.target.value)}
           value={searchString}
-          className={inputStyle}
+          onKeyDown={handleKeyDown}
         />
-        <button className={buttonStyle} onClick={searchForPost}>SEARCH POSTS</button>
+        <SearchButton
+          buttonText="SEARCH POSTS"
+          onClick={searchForPost}
+        />
       </div>
       <div className={listItemContainerStyle}>
         {
@@ -85,16 +78,11 @@ export default function Home() {
           )
         }
         {
-           loadingState === 'loading' && [0,1,2,3].map((n, index) => (
-            <div
-              className={grayLoadingStyle}
-              key={index}
-            />
-          ))
+           loadingState === 'loading' && <Placeholders number={6} />
         }
         {
           posts.map((post, index) => (
-            <Link href={`/profile/${post.profile.id}`} key={index}>
+            <Link href={`/profile/${post.profile.id || post.profile.profileId}`} key={index}>
               <a>
                 <div className={listItemStyle}>
                   <div className={profileContainerStyle} >
@@ -130,38 +118,6 @@ export default function Home() {
     </div>
   )
 }
-
-function generateRandomColor(){
-  let maxVal = 0xFFFFFF;
-  let randomNumber = Math.random() * maxVal; 
-  randomNumber = Math.floor(randomNumber);
-  randomNumber = randomNumber.toString(16);
-  let randColor = randomNumber.padStart(6, 0);   
-  return `#${randColor.toUpperCase()}`
-}
-
-const shimmer = keyframes`
-from {
-  opacity: .5;
-}
-
-50% {
-  opacity: 1;
-}
-
-100% {
-  opacity: .5;
-}
-`
-
-const grayLoadingStyle = css`
-  background-color: rgba(0, 0, 0, .075);
-  height: 115px;
-  width: 100%;
-  margin-top: 13px;
-  border-radius: 7px;
-  animation: ${shimmer} 2s infinite linear;
-`
 
 const searchContainerStyle = css`
   padding: 40px 0px 30px;
@@ -217,40 +173,4 @@ const nameStyle = css`
 const handleStyle = css`
   margin: 0px 0px 5px;
   color: #b900c9;
-`
-
-const inputStyle = css`
-  outline: none;
-  border: none;
-  padding: 15px 20px;
-  font-size: 16px;
-  border-radius: 25px;
-  border: 2px solid rgba(0, 0, 0, .04);
-  transition: all .4s;
-  width: 300px;
-  background-color: #fafafa;
-  &:focus {
-    background-color: white;
-    border: 2px solid rgba(0, 0, 0, .1);
-  }
-`
-
-const buttonStyle = css`
-  border: none;
-  outline: none;
-  margin-left: 15px;
-  background-color: black;
-  color: #340036;
-  padding: 17px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  background-color: rgb(249, 92, 255);
-  transition: all .35s;
-  width: 240px;
-  letter-spacing: .75px;
-  &:hover {
-    background-color: rgba(249, 92, 255, .75);
-  }
 `
