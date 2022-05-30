@@ -2,7 +2,7 @@
 
 This is an example of how to build a front-end application on top of [Lens Protocol](https://docs.lens.xyz/docs).
 
-The main queries used in this app are defined in __api.js__:
+The main API calls used in this app are defined in __api/index.js__:
 
 1. [recommendProfiles](https://docs.lens.xyz/docs/recommended-profiles#api-details) - get popular profiles
 
@@ -12,7 +12,11 @@ The main queries used in this app are defined in __api.js__:
 
 4. [searchProfiles](https://docs.lens.xyz/docs/search-profiles-and-publications) - allows you to search across hashtags on publications or profile handles. This query returns either a Post and Comment or Profile.
 
-You can view all of the APIs [here](https://docs.lens.xyz/docs/introduction)
+5. [follow](https://docs.lens.xyz/docs/functions#follow) - Follow a user
+
+6. [burn](https://docs.lens.xyz/docs/functions#burn) - Unfollows a user
+
+You can view all of the APIs [here](https://docs.lens.xyz/docs/introduction) and contract methods [here](https://docs.lens.xyz/docs/functions)
 
 ## Running this project
 
