@@ -17,9 +17,11 @@ export default function Home() {
   async function fetchPosts() {
     try {
       const response = await basicClient.query(explorePublications).toPromise()
-      const posts = response.data.explorePublications.items.map(post => {
-        post.backgroundColor = generateRandomColor()
-        return post
+      const posts = response.data.explorePublications.items.filter(post => {
+        if (post.profile) {
+          post.backgroundColor = generateRandomColor()
+          return post
+        }
       })
       setPosts(posts)
       setLoadingState('loaded')
@@ -35,13 +37,13 @@ export default function Home() {
       const response = await urqlClient.query(searchPublications, {
         query: searchString, type: 'PUBLICATION'
       }).toPromise()
-      console.log('response:', response)
-      const postData = response.data.search.items.map(post => {
-        post.backgroundColor = generateRandomColor()
-        return post
+      const postData = response.data.search.items.filter(post => {
+        if (post.profile) {
+          post.backgroundColor = generateRandomColor()
+          return post
+        }
       })
   
-      console.log('postData: ', postData)
       setPosts(postData)
       if (!postData.length) {
         setLoadingState('no-results')
@@ -56,6 +58,8 @@ export default function Home() {
       searchForPost()
     }
   }
+
+  console.log("UI Posts: ", posts)
 
   return (
     <div className={containerStyle}>
