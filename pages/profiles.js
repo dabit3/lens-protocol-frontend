@@ -3,7 +3,7 @@ import { createClient, searchProfiles, recommendProfiles, getPublications } from
 import { css } from '@emotion/css'
 import { trimString, generateRandomColor } from '../utils'
 import { SearchButton, SearchInput, Placeholders } from '../components'
-
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function Home() {
@@ -84,7 +84,12 @@ export default function Home() {
                   <div className={profileContainerStyle} >
                     {
                       profile.picture && profile.picture.original ? (
-                      <img src={profile.picture.original.url} className={profileImageStyle} />
+                      <Image
+                        src={profile.picture.original.url}
+                        className={profileImageStyle}
+                        width="42px"
+                        height="42px"
+                      />
                       ) : (
                         <div
                           className={
@@ -127,12 +132,13 @@ const latestPostStyle = css`
 const profileContainerStyle = css`
   display: flex;
   flex-direction: row;
+  align-items: flex-start;
 `
 
 const profileImageStyle = css`
+  border-radius: 21px;
   width: 42px;
   height: 42px;
-  border-radius: 34px;
 `
 
 const placeholderStyle = css`
