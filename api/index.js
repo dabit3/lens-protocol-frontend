@@ -23,7 +23,7 @@ export async function createClient() {
       })
       return urqlClient
     } catch (err) {
-      console.log('error refreshing token: ', err)
+      return basicClient
     }
   } else {
     return basicClient

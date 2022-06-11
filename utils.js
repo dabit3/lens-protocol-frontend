@@ -26,6 +26,8 @@ export async function refreshAuthToken() {
       refreshToken: token.refreshToken
     }).toPromise()
 
+    if (!authData.data) return
+
     const { accessToken, refreshToken } = authData.data.refresh
     const exp = parseJwt(refreshToken).exp
 
