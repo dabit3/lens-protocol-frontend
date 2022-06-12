@@ -16,7 +16,6 @@ const buttonStyle = css`
 border: none;
 outline: none;
 margin-left: 15px;
-background-color: black;
 color: #340036;
 padding: 17px;
 border-radius: 25px;

@@ -7,10 +7,12 @@ import { useRouter } from 'next/router'
 import { createClient, STORAGE_KEY, authenticate as authenticateMutation, getChallenge } from '../api'
 import { parseJwt, refreshAuthToken } from '../utils'
 import { AppContext } from '../context'
+import Modal from '../components/CreatePostModal'
 
 function MyApp({ Component, pageProps }) {
   const [connected, setConnected] = useState(true)
   const [userAddress, setUserAddress] = useState()
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -97,14 +99,39 @@ function MyApp({ Component, pageProps }) {
                   <button className={buttonStyle} onClick={signIn}>Sign in</button>
                 )
               }
+              {
+                connected && (
+                  <button
+                    className={modalButtonStyle}
+                    onClick={() => setIsModalOpen(true)}>
+                    <img
+                      src="/create-post.svg"
+                      className={createPostStyle}
+                    />
+                  </button>
+                )
+              }
             </div>
           </div>
         </nav>
-        <Component {...pageProps} />
+        <div className={appLayoutStyle}>
+          <Component {...pageProps} />
+        </div>
+        {
+          isModalOpen && (
+            <Modal
+              setIsModalOpen={setIsModalOpen}
+            />
+          )
+        }
       </div>
     </AppContext.Provider>
   )
 }
+
+const appLayoutStyle = css`
+  padding-top: 78px;
+`
 
 const linkTextStyle = css`
   margin-right: 40px;
@@ -117,10 +144,27 @@ const iconStyle = css`
   margin-right: 40px;
 `
 
+const modalButtonStyle = css`
+  background-color: transparent;
+  outline: none;
+  border: none;
+  cursor: pointer;
+`
+
+const createPostStyle = css`
+  height: 35px;
+  margin-right: 5px;
+`
+
 const navStyle = css`
   background-color: white;
   padding: 15px 30px;
   display: flex;
+  position: fixed;
+  width: 100%;
+  background-color: white;
+  z-index: 1;
+  border-bottom: 1px solid #ededed;
 `
 
 const navContainerStyle = css`

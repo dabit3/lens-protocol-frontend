@@ -33,6 +33,7 @@ export default function Home() {
   }
 
   async function searchForProfile() {
+    if (!searchString) return
     try {
       const urqlClient = await createClient()
       const response = await urqlClient.query(searchProfiles, {
