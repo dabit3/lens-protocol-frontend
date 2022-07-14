@@ -3,6 +3,8 @@ import { refresh as refreshMutation } from './api/mutations'
 import { ethers, utils } from 'ethers'
 import omitDeep from 'omit-deep'
 
+export const LENS_HUB_CONTRACT_ADDRESS = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
+
 export function trimString(string, length) {
   if (!string) return null
   return string.length < length ? string : string.substr(0, length-1) + "..."
@@ -68,4 +70,23 @@ export function generateRandomColor(){
   randomNumber = randomNumber.toString(16);
   let randColor = randomNumber.padStart(6, 0);   
   return `#${randColor.toUpperCase()}`
+}
+
+export const baseMetadata = {
+  version: "1.0.0",
+  image: null,
+  imageMimeType: null,
+  mainContentFocus: "TEXT",
+  contentWarning: null,
+  location: '',
+  cover_picture: '',
+  attributes: [
+    {
+      traitType: "string",
+      key: "type",
+      value: "post"
+    }
+  ],
+  media: [],
+  appId: "NaderDabitLensStarter"
 }

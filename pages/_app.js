@@ -4,7 +4,7 @@ import { ethers, providers } from 'ethers'
 import { css } from '@emotion/css'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { createClient, STORAGE_KEY, authenticate as authenticateMutation, getChallenge } from '../api'
+import { createClient, STORAGE_KEY, authenticate as authenticateMutation, getChallenge, getDefaultProfile } from '../api'
 import { parseJwt, refreshAuthToken } from '../utils'
 import { AppContext } from '../context'
 import Modal from '../components/CreatePostModal'
@@ -13,6 +13,7 @@ function MyApp({ Component, pageProps }) {
   const [connected, setConnected] = useState(true)
   const [userAddress, setUserAddress] = useState()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [userProfile, setUserProfile] = useState()
   const router = useRouter()
 
   useEffect(() => {
@@ -25,6 +26,7 @@ function MyApp({ Component, pageProps }) {
       if (addresses.length) {
         setConnected(true)
         setUserAddress(addresses[0])
+        getUserProfile(addresses[0])
       } else {
         setConnected(false)
       }
@@ -32,6 +34,18 @@ function MyApp({ Component, pageProps }) {
     checkConnection()
     listenForRouteChangeEvents()
   }, [])
+
+  async function getUserProfile(address) {
+    try {
+      const urqlClient = await createClient()
+      const response = await urqlClient.query(getDefaultProfile, {
+        address
+      }).toPromise()
+      setUserProfile(response.data.defaultProfile)
+    } catch (err) {
+      console.log('error fetching user profile...: ', err)
+    }
+  }
 
   async function listenForRouteChangeEvents() {
     router.events.on('routeChangeStart', () => {
@@ -57,13 +71,13 @@ function MyApp({ Component, pageProps }) {
       const authData = await urqlClient.mutation(authenticateMutation, {
         address: account, signature
       }).toPromise()
-      const { accessToken, refreshToken } = authData.data.authenticate
+      const { accessToken, refreshToken, ...rest } = authData.data.authenticate
+      console.log('rest: ', rest)
       const accessTokenData = parseJwt(accessToken)
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         accessToken, refreshToken, exp: accessTokenData.exp
       }))
-      
     } catch (err) {
       console.log('error: ', err)
     }
@@ -71,7 +85,8 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <AppContext.Provider value={{
-      userAddress
+      userAddress,
+      profile: userProfile
     }}>
       <div>
         <nav className={navStyle}>

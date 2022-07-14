@@ -1,18 +1,59 @@
-import { useState, useRef } from 'react'
+import { useContext, useRef } from 'react'
 import { css } from '@emotion/css'
-
-const metaData = {
-  content: '',
-  description: '',
-  media: [] // { item: url, type: mimetype }
-}
+import { ethers } from 'ethers'
+import { getSigner, baseMetadata, LENS_HUB_CONTRACT_ADDRESS } from '../utils'
+import { AppContext } from '../context'
+import ABI from '../abi'
+import { create } from 'ipfs-http-client'
+import { v4 as uuid } from 'uuid'
+const client = create('https://ipfs.infura.io:5001/api/v0')
 
 export default function CreatePostModal({
   setIsModalOpen
 }) {
+  const { profile } = useContext(AppContext)
   const inputRef = useRef(null)
-  function savePost() {
-    console.log("inputRef: ", inputRef.current.innerHTML)
+  async function uploadToIPFS() {
+    const metaData = {
+      createdOn: new Date().toISOString(),
+      content: inputRef.current.innerHTML,
+      description: inputRef.current.innerHTML,
+      name: `Post by @${profile.handle}`,
+      external_url: `https://lenster.xyz/u/${profile.handle}`,
+      metadata_id: uuid(),
+      ...baseMetadata
+    }
+    console.log('metaData: ', metaData)
+    const added = await client.add(JSON.stringify(metaData))
+    const uri = `https://ipfs.infura.io/ipfs/${added.path}`
+    return uri
+  }
+  async function savePost() {
+    const contentURI = await uploadToIPFS()
+    console.log('contentURI;', contentURI)
+
+    const contract = new ethers.Contract(
+      LENS_HUB_CONTRACT_ADDRESS,
+      ABI,
+      getSigner()
+    )
+    try {
+      const postData = {
+        profileId: profile.id,
+        contentURI,
+        collectModule: '0x23b9467334bEb345aAa6fd1545538F3d54436e96',
+        collectModuleInitData: ethers.utils.defaultAbiCoder.encode(['bool'], [true]),
+        referenceModule: '0x0000000000000000000000000000000000000000',
+        referenceModuleInitData: []
+      }
+      console.log('postData: ', postData)
+      const tx = await contract.post(postData)
+      await tx.wait()
+      setIsModalOpen(false)
+      
+    } catch (err) {
+      console.log('error: ', err)
+    }
   }
   return (
     <div className={containerStyle}>
@@ -82,6 +123,8 @@ const postInputStyle = css`
 
 const bottomContentStyle = css`
   margin-top: 10px;
+  max-height: 300px;
+  overflow: scroll;
 `
 
 const topBarStyle = css`

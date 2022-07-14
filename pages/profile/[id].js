@@ -2,18 +2,17 @@ import { useRouter } from 'next/router'
 import { useState, useEffect, useContext } from 'react'
 import {
   createClient,
-  getPublications,
-  getProfiles,
+  fetchProfile,
   doesFollow as doesFollowQuery,
   createUnfollowTypedData
 } from '../../api'
 import { ethers } from 'ethers'
 import { css } from '@emotion/css'
 import { AppContext } from '../../context'
-import { getSigner, generateRandomColor } from '../../utils'
+import { getSigner, LENS_HUB_CONTRACT_ADDRESS } from '../../utils'
+import ReactMarkdown from 'react-markdown'
 
 import ABI from '../../abi'
-const LENS_HUB_CONTRACT_ADDRESS = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
 
 export default function Profile() {
   const [profile, setProfile] = useState()
@@ -27,7 +26,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (id) {
-      fetchProfile()
+      getProfile()
     }
     if (id && userAddress) {
       checkDoesFollow()
@@ -58,17 +57,13 @@ export default function Profile() {
       }
   }
 
-  async function fetchProfile() {
+  async function getProfile() {
     try {
-      const urqlClient = await createClient()
-      const returnedProfile = await urqlClient.query(getProfiles, { id }).toPromise();
-      const profileData = returnedProfile.data.profiles.items[0]
-      profileData.color = generateRandomColor()
+      const {
+        profile: profileData, publications: publicationData
+      } = await fetchProfile(id)
       setProfile(profileData)
-
-      const pubs = await urqlClient.query(getPublications, { id, limit: 50 }).toPromise()
-
-      setPublications(pubs.data.publications.items)
+      setPublications(publicationData)
       setLoadedState('loaded')
     } catch (err) {
       console.log('error fetching profile...', err)
@@ -155,7 +150,9 @@ export default function Profile() {
           {
             publications.map((pub, index) => (
               <div className={publicationWrapper} key={index}>
-                <p className={publicationContentStyle}>{pub.metadata.content}</p>
+                <ReactMarkdown>
+                  {pub.metadata.content}
+                </ReactMarkdown>
               </div>
             ))
           }
