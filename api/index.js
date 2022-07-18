@@ -4,6 +4,8 @@ import { refreshAuthToken, generateRandomColor } from '../utils'
 
 export const APIURL = "https://api.lens.dev"
 export const STORAGE_KEY = "LH_STORAGE_KEY"
+export const LENS_HUB_CONTRACT_ADDRESS = "0xDb46d1Dc155634FbC732f92E853b10B288AD5a1d"
+export const PERIPHERY_CONTRACT_ADDRESS = "0xeff187b4190E551FC25a7fA4dFC6cf7fDeF7194f"
 
 export const basicClient = new createUrqlClient({
   url: APIURL
@@ -56,7 +58,8 @@ export {
   searchPublications,
   explorePublications,
   doesFollow,
-  getChallenge
+  getChallenge,
+  timeline
 } from './queries'
 
 export {
@@ -64,5 +67,6 @@ export {
   authenticate,
   refresh,
   createUnfollowTypedData,
-  broadcast
+  broadcast,
+  createProfileMetadataTypedData
 } from './mutations'

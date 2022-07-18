@@ -1,6 +1,7 @@
 import { css } from '@emotion/css'
+import { PINK } from '../theme'
 
-export function SearchButton({
+export function Button({
   buttonText,
   onClick
 }) {
@@ -22,11 +23,11 @@ border-radius: 25px;
 cursor: pointer;
 font-size: 14px;
 font-weight: 500;
-background-color: rgb(249, 92, 255);
+background-color: rgb(${PINK});
 transition: all .35s;
 width: 240px;
 letter-spacing: .75px;
 &:hover {
-  background-color: rgba(249, 92, 255, .75);
+  background-color: rgba(${PINK}, .75);
 }
 `

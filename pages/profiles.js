@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createClient, searchProfiles, recommendProfiles, getPublications } from '../api'
 import { css } from '@emotion/css'
 import { trimString, generateRandomColor } from '../utils'
-import { SearchButton, SearchInput, Placeholders } from '../components'
+import { Button, SearchInput, Placeholders } from '../components'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -60,7 +60,7 @@ export default function Home() {
   }
   
   return (
-    <div className={containerStyle}>
+    <div>
       <div className={searchContainerStyle}>
         <SearchInput
           placeholder='Search'
@@ -68,7 +68,7 @@ export default function Home() {
           value={searchString}
           onKeyDown={handleKeyDown}      
         />
-        <SearchButton
+        <Button
           onClick={searchForProfile}
           buttonText="SEARCH PROFILES"
         />
@@ -144,12 +144,6 @@ const profileImageStyle = css`
 
 const placeholderStyle = css`
   ${profileImageStyle};
-`
-
-const containerStyle = css`
-  width: 900px;
-  margin: 0 auto;
-  padding: 0px 0px 50px;
 `
 
 const listItemContainerStyle = css`

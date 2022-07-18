@@ -17,7 +17,7 @@ export function Placeholders({
 
 const shimmer = keyframes`
   from {
-    opacity: .5;
+    opacity: .2;
   }
 
   50% {
@@ -25,12 +25,12 @@ const shimmer = keyframes`
   }
 
   100% {
-    opacity: .5;
+    opacity: .2;
   }
 `
 
 const grayLoadingStyle = css`
-  background-color: rgba(0, 0, 0, .075);
+  background-color: rgba(0, 0, 0, .1);
   height: 115px;
   width: 100%;
   margin-top: 13px;

@@ -4,15 +4,16 @@ import {
   createClient,
   fetchProfile,
   doesFollow as doesFollowQuery,
-  createUnfollowTypedData
+  createUnfollowTypedData,
+  LENS_HUB_CONTRACT_ADDRESS,
 } from '../../api'
 import { ethers } from 'ethers'
 import { css } from '@emotion/css'
 import { AppContext } from '../../context'
-import { getSigner, LENS_HUB_CONTRACT_ADDRESS } from '../../utils'
+import { getSigner } from '../../utils'
 import ReactMarkdown from 'react-markdown'
 
-import ABI from '../../abi'
+import LENSHUB from '../../abi/lenshub'
 
 export default function Profile() {
   const [profile, setProfile] = useState()
@@ -22,7 +23,7 @@ export default function Profile() {
   const router = useRouter()
   const context = useContext(AppContext)
   const { id } = router.query
-  const { userAddress } = context
+  const { userAddress, profile: userProfile } = context
 
   useEffect(() => {
     if (id) {
@@ -42,10 +43,9 @@ export default function Profile() {
       const typedData = response.data.createUnfollowTypedData.typedData
       const contract = new ethers.Contract(
         typedData.domain.verifyingContract,
-        ABI,
+        LENSHUB,
         getSigner()
       )
-
       const tx = await contract.burn(typedData.value.tokenId)
       setTimeout(() => {
         setDoesFollow(false)
@@ -89,7 +89,7 @@ export default function Profile() {
   async function followUser() {
     const contract = new ethers.Contract(
       LENS_HUB_CONTRACT_ADDRESS,
-      ABI,
+      LENSHUB,
       getSigner()
     )
 
@@ -105,7 +105,13 @@ export default function Profile() {
     }
   }
 
+  function editProfile() {
+    router.push('/edit-profile')
+  }
+
   if (!profile) return null
+
+  const profileOwner = userProfile?.id === id
 
   return (
     <div className={containerStyle}>
@@ -127,9 +133,10 @@ export default function Profile() {
           } src={profile.picture?.original?.url} />
           <h3 className={nameStyle}>{profile.name}</h3>
           <p className={handleStyle}>{profile.handle}</p>
+          <p className={bioStyle}>{profile.bio}</p>
           <div>
             {
-              userAddress ? (
+              userAddress && !profileOwner ? (
                 doesFollow ? (
                   <button
                    onClick={unfollow}
@@ -142,6 +149,14 @@ export default function Profile() {
                   >Follow</button>
                 )
               ) : null
+            }
+            {
+              profileOwner && (
+                <button
+                  onClick={editProfile}
+                  className={buttonStyle}
+                >Edit Profile</button>
+              )
             }
           </div>
         </div>
@@ -170,6 +185,10 @@ export default function Profile() {
     </div>
   )
 }
+
+const bioStyle = css`
+  font-weight: 500;
+`
 
 const emptyPostTextStyle = css`
   text-align: center;
@@ -241,9 +260,7 @@ const rightColumnStyle = css`
 `
 
 const containerStyle = css`
-  width: 900px;
-  margin: 0 auto;
-  padding: 50px 0px;
+  padding-top: 50px;
 `
 
 const buttonStyle = css`

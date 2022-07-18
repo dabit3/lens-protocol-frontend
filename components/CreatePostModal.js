@@ -1,9 +1,10 @@
 import { useContext, useRef } from 'react'
 import { css } from '@emotion/css'
 import { ethers } from 'ethers'
-import { getSigner, baseMetadata, LENS_HUB_CONTRACT_ADDRESS } from '../utils'
+import { getSigner, baseMetadata } from '../utils'
+import { LENS_HUB_CONTRACT_ADDRESS } from '../api'
 import { AppContext } from '../context'
-import ABI from '../abi'
+import LENSHUB from '../abi/lenshub'
 import { create } from 'ipfs-http-client'
 import { v4 as uuid } from 'uuid'
 const client = create('https://ipfs.infura.io:5001/api/v0')
@@ -15,26 +16,24 @@ export default function CreatePostModal({
   const inputRef = useRef(null)
   async function uploadToIPFS() {
     const metaData = {
-      createdOn: new Date().toISOString(),
       content: inputRef.current.innerHTML,
       description: inputRef.current.innerHTML,
       name: `Post by @${profile.handle}`,
       external_url: `https://lenster.xyz/u/${profile.handle}`,
       metadata_id: uuid(),
+      createdOn: new Date().toISOString(),
       ...baseMetadata
     }
-    console.log('metaData: ', metaData)
     const added = await client.add(JSON.stringify(metaData))
     const uri = `https://ipfs.infura.io/ipfs/${added.path}`
     return uri
   }
   async function savePost() {
     const contentURI = await uploadToIPFS()
-    console.log('contentURI;', contentURI)
 
     const contract = new ethers.Contract(
       LENS_HUB_CONTRACT_ADDRESS,
-      ABI,
+      LENSHUB,
       getSigner()
     )
     try {
@@ -46,7 +45,6 @@ export default function CreatePostModal({
         referenceModule: '0x0000000000000000000000000000000000000000',
         referenceModuleInitData: []
       }
-      console.log('postData: ', postData)
       const tx = await contract.post(postData)
       await tx.wait()
       setIsModalOpen(false)
@@ -82,7 +80,7 @@ export default function CreatePostModal({
               <button
                 className={buttonStyle}
                 onClick={savePost}
-              >Save Post</button>
+              >Create Post</button>
             </div>
           </div>
         </div>

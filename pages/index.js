@@ -1,32 +1,65 @@
-import { useState, useEffect } from 'react'
-import { createClient, basicClient, searchPublications, explorePublications } from '../api'
+import { useState, useEffect, useContext } from 'react'
+import { createClient, basicClient, searchPublications, explorePublications, timeline } from '../api'
 import { css } from '@emotion/css'
+import { ethers } from 'ethers'
 import { trimString, generateRandomColor } from '../utils'
-import { SearchButton, SearchInput, Placeholders } from '../components'
+import { Button, SearchInput, Placeholders } from '../components'
+import { AppContext } from '../context'
 import Link from 'next/link'
+
+const typeMap = {
+  Comment: "Comment",
+  Mirror: "Mirror",
+  Post: "Post"
+}
 
 export default function Home() {
   const [posts, setPosts] = useState([])
   const [loadingState, setLoadingState] = useState('loading')
   const [searchString, setSearchString] = useState('')
+  const { profile } = useContext(AppContext)
 
   useEffect(() => {
     fetchPosts() 
-  }, [])
+  }, [profile])
 
   async function fetchPosts() {
-    try {
-      const response = await basicClient.query(explorePublications).toPromise()
-      const posts = response.data.explorePublications.items.filter(post => {
-        if (post.profile) {
-          post.backgroundColor = generateRandomColor()
-          return post
-        }
-      })
-      setPosts(posts)
-      setLoadingState('loaded')
-    } catch (error) {
-      console.log({ error })
+    const provider = new ethers.providers.Web3Provider(
+      (window).ethereum
+    )
+    const addresses = await provider.listAccounts();
+    console.log('addresses: ', addresses)
+    if (profile) {
+      try {
+        const client = await createClient()
+        const response = await client.query(timeline, {
+          profileId: profile.id, limit: 15
+        }).toPromise()
+        const posts = response.data.timeline.items.filter(post => {
+          if (post.profile) {
+            post.backgroundColor = generateRandomColor()
+            return post
+          }
+        })
+        setPosts(posts)
+        setLoadingState('loaded')
+      } catch (error) {
+        console.log({ error })
+      }
+    } else if (!addresses.length) {
+      try {
+        const response = await basicClient.query(explorePublications).toPromise()
+        const posts = response.data.explorePublications.items.filter(post => {
+          if (post.profile) {
+            post.backgroundColor = generateRandomColor()
+            return post
+          }
+        })
+        setPosts(posts)
+        setLoadingState('loaded')
+      } catch (error) {
+        console.log({ error })
+      }
     }
   }
 
@@ -59,10 +92,8 @@ export default function Home() {
     }
   }
 
-  console.log("UI Posts: ", posts)
-
   return (
-    <div className={containerStyle}>
+    <div>
       <div className={searchContainerStyle}>
         <SearchInput
           placeholder='Search'
@@ -70,7 +101,7 @@ export default function Home() {
           value={searchString}
           onKeyDown={handleKeyDown}
         />
-        <SearchButton
+        <Button
           buttonText="SEARCH POSTS"
           onClick={searchForPost}
         />
@@ -89,6 +120,7 @@ export default function Home() {
             <Link href={`/profile/${post.profile.id || post.profile.profileId}`} key={index}>
               <a>
                 <div className={listItemStyle}>
+                  <p className={itemTypeStyle}>{typeMap[post.__typename]}</p>
                   <div className={profileContainerStyle} >
                     {
                       post.profile.picture && post.profile.picture.original ? (
@@ -147,12 +179,6 @@ const placeholderStyle = css`
   ${profileImageStyle};
 `
 
-const containerStyle = css`
-  width: 900px;
-  margin: 0 auto;
-  padding: 0px 0px 50px;
-`
-
 const listItemContainerStyle = css`
   display: flex;
   flex-direction: column;
@@ -177,4 +203,12 @@ const nameStyle = css`
 const handleStyle = css`
   margin: 0px 0px 5px;
   color: #b900c9;
+`
+
+const itemTypeStyle = css`
+  margin: 0;
+  font-weight: 500;
+  font-size: 14px;
+  color: rgba(0, 0, 0, .45);
+  margin-bottom: 16px;
 `

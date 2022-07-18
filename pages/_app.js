@@ -71,10 +71,9 @@ function MyApp({ Component, pageProps }) {
       const authData = await urqlClient.mutation(authenticateMutation, {
         address: account, signature
       }).toPromise()
-      const { accessToken, refreshToken, ...rest } = authData.data.authenticate
-      console.log('rest: ', rest)
+      const { accessToken, refreshToken } = authData.data.authenticate
       const accessTokenData = parseJwt(accessToken)
-
+      getUserProfile(account)
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         accessToken, refreshToken, exp: accessTokenData.exp
       }))
@@ -107,6 +106,15 @@ function MyApp({ Component, pageProps }) {
                   <p className={linkTextStyle}>Explore Profiles</p>
                 </a>
               </Link>
+              {
+                userProfile && (
+                  <Link href={`/profile/${userProfile.id}`}>
+                    <a>
+                      <p className={linkTextStyle}>Profile</p>
+                    </a>
+                  </Link>
+                )
+              }
             </div>
             <div className={buttonContainerStyle}>
               {
@@ -145,7 +153,9 @@ function MyApp({ Component, pageProps }) {
 }
 
 const appLayoutStyle = css`
-  padding-top: 78px;
+  width: 900px;
+  margin: 0 auto;
+  padding: 78px 0px 50px;
 `
 
 const linkTextStyle = css`
