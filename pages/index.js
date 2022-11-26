@@ -28,18 +28,27 @@ export default function Home() {
       (window).ethereum
     )
     const addresses = await provider.listAccounts();
-    console.log('addresses: ', addresses)
     if (profile) {
       try {
         const client = await createClient()
         const response = await client.query(timeline, {
           profileId: profile.id, limit: 15
         }).toPromise()
-        const posts = response.data.timeline.items.filter(post => {
+        let posts = response.data.timeline.items.filter(post => {
           if (post.profile) {
             post.backgroundColor = generateRandomColor()
             return post
           }
+        })
+        posts = posts.map(post => {
+          let picture = post.profile.picture
+          if (picture && picture.original && picture.original.url) {
+            if (picture.original.url.startsWith('ipfs://')) {
+              let result = picture.original.url.substring(7, picture.original.url.length)
+              post.profile.picture.original.url = `http://lens.infura-ipfs.io/ipfs/${result}`
+            }
+          }
+          return post
         })
         setPosts(posts)
         setLoadingState('loaded')
