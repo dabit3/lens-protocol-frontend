@@ -7,7 +7,19 @@ import { AppContext } from '../context'
 import LENSHUB from '../abi/lenshub'
 import { create } from 'ipfs-http-client'
 import { v4 as uuid } from 'uuid'
-const client = create('https://ipfs.infura.io:5001/api/v0')
+
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
+const projectSecret = process.env.NEXT_PUBLIC_PROJECT_SECRET
+const auth = 'Basic ' + Buffer.from(projectId + ':' + projectSecret).toString('base64');
+
+const client = create({
+  host: 'ipfs.infura.io',
+  port: 5001,
+  protocol: 'https',
+  headers: {
+      authorization: auth,
+  },
+})
 
 export default function CreatePostModal({
   setIsModalOpen
