@@ -69,22 +69,3 @@ export function generateRandomColor(){
   let randColor = randomNumber.padStart(6, 0);   
   return `#${randColor.toUpperCase()}`
 }
-
-export const baseMetadata = {
-  version: "1.0.0",
-  image: null,
-  imageMimeType: null,
-  mainContentFocus: "TEXT",
-  contentWarning: null,
-  location: '',
-  cover_picture: '',
-  attributes: [
-    {
-      traitType: "string",
-      key: "type",
-      value: "post"
-    }
-  ],
-  media: [],
-  appId: "NaderDabitLensStarter"
-}

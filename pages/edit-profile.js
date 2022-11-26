@@ -14,7 +14,18 @@ import {
 } from '../api'
 import { signedTypeData, splitSignature, getSigner } from '../utils'
 
-const client = create('https://ipfs.infura.io:5001/api/v0')
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
+const projectSecret = process.env.NEXT_PUBLIC_PROJECT_SECRET
+const auth = 'Basic ' + Buffer.from(projectId + ':' + projectSecret).toString('base64');
+
+const client = create({
+  host: 'ipfs.infura.io',
+  port: 5001,
+  protocol: 'https',
+  headers: {
+      authorization: auth,
+  },
+})
 
 export default function EditProfile() {
   const [updatedProfile, setUpdatedProfile] = useState()
@@ -26,7 +37,7 @@ export default function EditProfile() {
 
     if (updatedProfile.twitter) {
       const index = profile.attributes.findIndex(v => v.key === 'twitter')
-      profile.attributes[index].value = updatedProfile .twitter
+      profile.attributes[index].value = updatedProfile.twitter
     }
 
     const newMeta = {

@@ -1,6 +1,7 @@
 import { createClient as createUrqlClient } from 'urql'
 import { getProfiles, getPublications } from './queries'
-import { refreshAuthToken, generateRandomColor } from '../utils'
+import { createPostTypedData } from './mutations'
+import { refreshAuthToken, generateRandomColor, signedTypeData } from '../utils'
 
 export const APIURL = "https://api.lens.dev"
 export const STORAGE_KEY = "LH_STORAGE_KEY"
@@ -49,6 +50,30 @@ export async function createClient() {
   }
 }
 
+export async function createPostTypedDataMutation (request, token) {
+  const { accessToken } = await refreshAuthToken()
+  const urqlClient = new createUrqlClient({
+    url: APIURL,
+    fetchOptions: {
+      headers: {
+        'x-access-token': `Bearer ${accessToken}`
+      },
+    },
+  })
+  const result = await urqlClient.mutation(createPostTypedData, {
+    request
+  }).toPromise()
+
+  return result.data.createPostTypedData
+}
+
+export const signCreatePostTypedData = async (request, token) => {
+  const result = await createPostTypedDataMutation(request, token)
+  const typedData = result.typedData
+  const signature = await signedTypeData(typedData.domain, typedData.types, typedData.value);
+  return { result, signature };
+}
+
 export {
   recommendProfiles,
   getProfiles,
@@ -68,5 +93,6 @@ export {
   refresh,
   createUnfollowTypedData,
   broadcast,
-  createProfileMetadataTypedData
+  createProfileMetadataTypedData,
+  createPostTypedData
 } from './mutations'

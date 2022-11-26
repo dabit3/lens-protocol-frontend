@@ -1,12 +1,13 @@
 import { useContext, useRef } from 'react'
 import { css } from '@emotion/css'
 import { ethers } from 'ethers'
-import { getSigner, baseMetadata } from '../utils'
-import { LENS_HUB_CONTRACT_ADDRESS } from '../api'
+import { getSigner } from '../utils'
+import { LENS_HUB_CONTRACT_ADDRESS, signCreatePostTypedData } from '../api'
 import { AppContext } from '../context'
 import LENSHUB from '../abi/lenshub'
 import { create } from 'ipfs-http-client'
 import { v4 as uuid } from 'uuid'
+import { refreshAuthToken, splitSignature } from '../utils'
 
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
 const projectSecret = process.env.NEXT_PUBLIC_PROJECT_SECRET
@@ -28,37 +29,64 @@ export default function CreatePostModal({
   const inputRef = useRef(null)
   async function uploadToIPFS() {
     const metaData = {
+      version: '2.0.0',
       content: inputRef.current.innerHTML,
       description: inputRef.current.innerHTML,
       name: `Post by @${profile.handle}`,
       external_url: `https://lenster.xyz/u/${profile.handle}`,
       metadata_id: uuid(),
-      createdOn: new Date().toISOString(),
-      ...baseMetadata
+      mainContentFocus: 'TEXT_ONLY',
+      attributes: [],
+      locale: 'en-US',
     }
+
     const added = await client.add(JSON.stringify(metaData))
     const uri = `https://ipfs.infura.io/ipfs/${added.path}`
     return uri
   }
+
   async function savePost() {
     const contentURI = await uploadToIPFS()
+    const { accessToken } = await refreshAuthToken()
+    const createPostRequest = {
+      profileId: profile.id,
+      contentURI,
+      collectModule: {
+        freeCollectModule: { followerOnly: true }
+      },
+      referenceModule: {
+        followerOnlyReferenceModule: false
+      },
+    }
 
-    const contract = new ethers.Contract(
-      LENS_HUB_CONTRACT_ADDRESS,
-      LENSHUB,
-      getSigner()
-    )
     try {
-      const postData = {
-        profileId: profile.id,
-        contentURI,
-        collectModule: '0x23b9467334bEb345aAa6fd1545538F3d54436e96',
-        collectModuleInitData: ethers.utils.defaultAbiCoder.encode(['bool'], [true]),
-        referenceModule: '0x0000000000000000000000000000000000000000',
-        referenceModuleInitData: []
-      }
-      const tx = await contract.post(postData)
+      const signedResult = await signCreatePostTypedData(createPostRequest, accessToken)
+      const typedData = signedResult.result.typedData
+      const { v, r, s } = splitSignature(signedResult.signature)
+
+      const contract = new ethers.Contract(
+        LENS_HUB_CONTRACT_ADDRESS,
+        LENSHUB,
+        getSigner()
+      )
+
+      const tx = await contract.postWithSig({
+        profileId: typedData.value.profileId,
+        contentURI: typedData.value.contentURI,
+        collectModule: typedData.value.collectModule,
+        collectModuleInitData: typedData.value.collectModuleInitData,
+        referenceModule: typedData.value.referenceModule,
+        referenceModuleInitData: typedData.value.referenceModuleInitData,
+        sig: {
+          v,
+          r,
+          s,
+          deadline: typedData.value.deadline,
+        },
+      })
+
       await tx.wait()
+      console.log('successfully created post: tx hash', tx.hash)
       setIsModalOpen(false)
       
     } catch (err) {
