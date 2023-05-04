@@ -2,8 +2,6 @@
 
 This is an example of how to build a front-end application on top of [Lens Protocol](https://docs.lens.xyz/docs).
 
-> For this project to run, you must configure the Infura project ID and project secret in a file named `.env.local`. Check out .example.env.local for guidance.
-
 The main API calls used in this app are defined in __api/index.js__:
 
 1. [recommendProfiles](https://docs.lens.xyz/docs/recommended-profiles#api-details) - Get popular profiles
@@ -27,6 +25,8 @@ The main API calls used in this app are defined in __api/index.js__:
 You can view all of the APIs [here](https://docs.lens.xyz/docs/introduction) and contract methods [here](https://docs.lens.xyz/docs/functions)
 
 ## Running this project
+
+> For this project to run, you must configure the **Infura project ID and project secret** in a file named `.env.local`. Check out .example.env.local for guidance.
 
 You can run this project by following these steps:
 
